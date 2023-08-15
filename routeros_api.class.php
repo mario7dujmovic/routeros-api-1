@@ -17,6 +17,8 @@
 
 namespace RouterosAPI;
 
+use Exception;
+
 class RouterosAPI
 {
     var $debug     = false; //  Show debug information
@@ -276,9 +278,10 @@ class RouterosAPI
     /**
      * Read data from Router OS
      *
-     * @param boolean     $parse      Parse the data? default: true
+     * @param boolean $parse Parse the data? default: true
      *
      * @return array                  Array with parsed or unparsed data
+     * @throws \Exception
      */
     public function read($parse = true)
     {
@@ -343,8 +346,11 @@ class RouterosAPI
                 $this->debug('>>> [' . $LENGTH . ', ' . $STATUS['unread_bytes'] . ']' . $_);
             }
 
-            if ((!$this->connected && !$STATUS['unread_bytes']) || ($this->connected && !$STATUS['unread_bytes'] && $receiveddone) || $STATUS['timed_out']) {
+            if ((!$this->connected && !$STATUS['unread_bytes']) || ($this->connected && !$STATUS['unread_bytes'] && $receiveddone)) {
                 break;
+            }
+            if ($STATUS['timed_out']) {
+                throw new Exception("Connection Timed Out");
             }
         }
 
