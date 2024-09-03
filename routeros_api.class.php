@@ -34,6 +34,8 @@ class RouterosAPI
     var $error_str;         //  Variable for storing connection error text, if any
 
     /* Check, can be var used in foreach  */
+    public $short_call = true;
+
     public function isIterable($var)
     {
         return $var !== null
@@ -100,7 +102,7 @@ class RouterosAPI
     {
         for ($ATTEMPT = 1; $ATTEMPT <= $this->attempts; $ATTEMPT++) {
             $this->connected = false;
-	    $PROTOCOL = ($this->ssl ? 'ssl://' : '' );
+	        $PROTOCOL = ($this->ssl ? 'ssl://' : '' );
             $context = stream_context_create(array('ssl' => array('ciphers' => 'ADH:' . ($this->ssl ? '@SECLEVEL=0' : 'ALL' ), 'verify_peer' => false, 'verify_peer_name' => false)));
             $this->debug('Connection attempt #' . $ATTEMPT . ' to ' . $PROTOCOL . $ip . ':' . $this->port . '...');
             $this->socket = @stream_socket_client($PROTOCOL . $ip.':'. $this->port, $this->error_no, $this->error_str, $this->timeout, STREAM_CLIENT_CONNECT,$context);
@@ -288,6 +290,12 @@ class RouterosAPI
         $RESPONSE     = array();
         $receiveddone = false;
         while (true) {
+            if($this->short_call) {
+                $STATUS = socket_get_status($this->socket);
+                if ($STATUS['timed_out']) {
+                    throw new Exception("Connection Timed Out");
+                }
+            }
             // Read the first byte of input which gives us some or all of the length
             // of the remaining reply.
             $BYTE   = ord(fread($this->socket, 1));
